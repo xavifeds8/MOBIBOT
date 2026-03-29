@@ -67,6 +67,48 @@
             50% { opacity: 0.5; }
         }
 
+        .speed-display {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .speed-label {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .speed-value {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .speed-bar {
+            width: 100%;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .speed-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.1s ease-out;
+        }
+
         .controls {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -204,6 +246,14 @@
             <span id="status-text">Stopped</span>
         </div>
 
+        <div class="speed-display">
+            <div class="speed-label">Speed</div>
+            <div class="speed-value" id="speed-value">0%</div>
+            <div class="speed-bar">
+                <div class="speed-bar-fill" id="speed-bar-fill"></div>
+            </div>
+        </div>
+
         <div class="controls">
             <button class="control-btn" id="forward" data-command="forward">
                 <span class="arrow">▲</span>
@@ -237,8 +287,11 @@
         const buttons = document.querySelectorAll('.control-btn');
         const statusText = document.getElementById('status-text');
         const messageDiv = document.getElementById('message');
+        const speedValue = document.getElementById('speed-value');
+        const speedBarFill = document.getElementById('speed-bar-fill');
         let currentCommand = null;
         let isPressed = false;
+        let statusUpdateInterval = null;
 
         // Function to send command to server
         async function sendCommand(command) {
@@ -351,19 +404,42 @@
             e.preventDefault();
         });
 
-        // Initial status check
+        // Update speed display
+        function updateSpeedDisplay(speed) {
+            speedValue.textContent = Math.round(speed) + '%';
+            speedBarFill.style.width = speed + '%';
+        }
+
+        // Continuous status check while moving
         async function checkStatus() {
             try {
                 const response = await fetch('/status');
                 const data = await response.json();
                 updateStatus(data.direction);
+                updateSpeedDisplay(data.speed);
             } catch (error) {
                 console.error('Status check failed:', error);
             }
         }
 
-        // Check status on load
+        // Start continuous status updates
+        function startStatusUpdates() {
+            if (statusUpdateInterval === null) {
+                statusUpdateInterval = setInterval(checkStatus, 100); // Update every 100ms
+            }
+        }
+
+        // Stop continuous status updates
+        function stopStatusUpdates() {
+            if (statusUpdateInterval !== null) {
+                clearInterval(statusUpdateInterval);
+                statusUpdateInterval = null;
+            }
+        }
+
+        // Check status on load and start updates
         checkStatus();
+        startStatusUpdates();
     </script>
 </body>
 </html>
