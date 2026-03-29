@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WiFi Robot Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .status-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ade80;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+            aspect-ratio: 1;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .control-btn.pressed {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: scale(0.95);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #forward {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        #left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        #stop {
+            grid-column: 2;
+            grid-row: 2;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            font-size: 20px;
+        }
+
+        #stop:active {
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        #right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        #reverse {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .arrow {
+            font-size: 32px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            .control-btn {
+                font-size: 20px;
+            }
+
+            .arrow {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 WiFi Robot Controller</h1>
+        
+        <div class="status-bar">
+            <span class="status-indicator"></span>
+            <span id="status-text">Stopped</span>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="forward" data-command="forward">
+                <span class="arrow">▲</span>
+            </button>
+            
+            <button class="control-btn" id="left" data-command="left">
+                <span class="arrow">◄</span>
+            </button>
+            
+            <button class="control-btn" id="stop" data-command="stop">
+                STOP
+            </button>
+            
+            <button class="control-btn" id="right" data-command="right">
+                <span class="arrow">►</span>
+            </button>
+            
+            <button class="control-btn" id="reverse" data-command="reverse">
+                <span class="arrow">▼</span>
+            </button>
+        </div>
+
+        <div id="message" class="message"></div>
+        
+        <div class="info-text">
+            Press and hold buttons to control the robot
+        </div>
+    </div>
+
+    <script>
+        const buttons = document.querySelectorAll('.control-btn');
+        const statusText = document.getElementById('status-text');
+        const messageDiv = document.getElementById('message');
+        let currentCommand = null;
+        let isPressed = false;
+
+        // Function to send command to server
+        async function sendCommand(command) {
+            try {
+                const response = await fetch('/control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ command: command })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    updateStatus(command);
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Connection error: ' + error.message, 'error');
+            }
+        }
+
+        // Update status display
+        function updateStatus(command) {
+            const statusMap = {
+                'forward': '⬆️ Moving Forward',
+                'reverse': '⬇️ Moving Backward',
+                'left': '⬅️ Turning Left',
+                'right': '➡️ Turning Right',
+                'stop': '🛑 Stopped'
+            };
+            statusText.textContent = statusMap[command] || 'Stopped';
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 2000);
+        }
+
+        // Handle button press (touch and mouse)
+        function handlePressStart(button) {
+            if (isPressed) return;
+            
+            isPressed = true;
+            const command = button.dataset.command;
+            currentCommand = command;
+            button.classList.add('pressed');
+            sendCommand(command);
+        }
+
+        // Handle button release (touch and mouse)
+        function handlePressEnd(button) {
+            if (!isPressed) return;
+            
+            isPressed = false;
+            button.classList.remove('pressed');
+            
+            // Auto-stop when releasing movement buttons (not stop button)
+            if (currentCommand !== 'stop') {
+                sendCommand('stop');
+            }
+            currentCommand = null;
+        }
+
+        // Add event listeners for each button
+        buttons.forEach(button => {
+            // Touch events
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handlePressStart(button);
+            });
+
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handlePressEnd(button);
+            });
+
+            button.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                handlePressEnd(button);
+            });
+
+            // Mouse events (for desktop testing)
+            button.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                handlePressStart(button);
+            });
+
+            button.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                handlePressEnd(button);
+            });
+
+            button.addEventListener('mouseleave', (e) => {
+                if (isPressed) {
+                    handlePressEnd(button);
+                }
+            });
+        });
+
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Initial status check
+        async function checkStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                updateStatus(data.direction);
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // Check status on load
+        checkStatus();
+    </script>
+</body>
+</html>
